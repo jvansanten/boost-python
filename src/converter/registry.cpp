@@ -14,9 +14,14 @@
 # define BOOST_PYTHON_CONVERTER_REGISTRY_APPLE_MACH_WORKAROUND
 #endif
 
+// #define BOOST_PYTHON_TRACE_REGISTRY 1
+
+# include <iostream>
+
 #if defined(BOOST_PYTHON_TRACE_REGISTRY) \
  || defined(BOOST_PYTHON_CONVERTER_REGISTRY_APPLE_MACH_WORKAROUND)
 # include <iostream>
+static int _trace_stack_depth = 0;
 #endif
 
 namespace boost { namespace python { namespace converter { 
@@ -130,14 +135,14 @@ namespace // <unnamed>
           
           initialize_builtin_converters();
       }
-#  ifdef BOOST_PYTHON_TRACE_REGISTRY
-      std::cout << "registry: ";
-      for (registry_t::iterator p = registry.begin(); p != registry.end(); ++p)
-      {
-          std::cout << p->target_type << "; ";
-      }
-      std::cout << '\n';
-#  endif 
+// #  ifdef BOOST_PYTHON_TRACE_REGISTRY
+//       std::cout << "registry: ";
+//       for (registry_t::iterator p = registry.begin(); p != registry.end(); ++p)
+//       {
+//           std::cout << p->target_type << "; ";
+//       }
+//       std::cout << '\n';
+// #  endif 
 # endif 
       return registry;
   }
@@ -204,14 +209,35 @@ namespace registry
 {
   void insert(to_python_function_t f, type_info source_t, PyTypeObject const* (*to_python_target_type)())
   {
-#  ifdef BOOST_PYTHON_TRACE_REGISTRY
-      std::cout << "inserting to_python " << source_t << "\n";
-#  endif 
+// #  ifdef BOOST_PYTHON_TRACE_REGISTRY
+#if 0
+      std::cout << "inserting to_python " << source_t;
+      if (to_python_target_type) {
+        PyTypeObject const *klass;
+        try {
+            PyTypeObject const *klass = to_python_target_type();
+            fprintf(stdout, " as: ");
+            if (PyObject_Print((PyObject*)klass, stdout, 0)) {
+                PyErr_Print();
+                PyErr_Clear();
+            }
+            std::cout << "\n";
+        } catch (error_already_set) {
+            PyErr_Clear();
+        }
+      }
+#endif
+// #  endif 
       entry* slot = get(source_t);
       
-      assert(slot->m_to_python == 0); // we have a problem otherwise
+    //   assert(slot->m_to_python == 0); // we have a problem otherwise
       if (slot->m_to_python != 0)
       {
+        //   fprintf(stderr, "replacing: ");
+        //   PyObject_Print((PyObject*)(slot->m_to_python_target_type()), stderr, 0);
+        //   fprintf(stderr, " -> ");
+        //   PyObject_Print((PyObject*)(to_python_target_type()), stderr, 0);
+        //   fprintf(stderr, "\n");
           std::string msg = (
               std::string("to-Python converter for ")
               + source_t.name()
