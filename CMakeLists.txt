@@ -6,6 +6,9 @@ cmake_minimum_required(VERSION 3.14...3.20)
 
 project(boost_python VERSION "${BOOST_SUPERPROJECT_VERSION}" LANGUAGES CXX)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/include)
+include(BoostInstall)
+
 find_package(Python REQUIRED COMPONENTS Development OPTIONAL_COMPONENTS NumPy)
 
 if(Python_NumPy_FOUND)
@@ -14,6 +17,7 @@ else()
   message(STATUS "Boost.Python: using Python ${Python_VERSION} without NumPy")
 endif()
 
+find_package(Boost COMPONENTS headers REQUIRED)
 # boost_pythonXY
 
 set(_pyver ${Python_VERSION_MAJOR}${Python_VERSION_MINOR})
@@ -57,32 +61,38 @@ target_include_directories(${_boost_python} PUBLIC include)
 
 target_link_libraries(${_boost_python}
   PUBLIC
-    Boost::align
-    Boost::bind
-    Boost::config
-    Boost::conversion
-    Boost::core
-    Boost::detail
-    Boost::foreach
-    Boost::function
-    Boost::iterator
-    Boost::lexical_cast
-    Boost::mpl
-    Boost::numeric_conversion
-    Boost::preprocessor
-    Boost::smart_ptr
-    Boost::static_assert
-    Boost::tuple
-    Boost::type_traits
-    Boost::utility
-
+    Boost::headers
     Python::Module
-
-  PRIVATE
-    Boost::graph
-    Boost::integer
-    Boost::property_map
 )
+
+# target_link_libraries(${_boost_python}
+#   PUBLIC
+#     Boost::align
+#     Boost::bind
+#     Boost::config
+#     Boost::conversion
+#     Boost::core
+#     Boost::detail
+#     Boost::foreach
+#     Boost::function
+#     Boost::iterator
+#     Boost::lexical_cast
+#     Boost::mpl
+#     Boost::numeric_conversion
+#     Boost::preprocessor
+#     Boost::smart_ptr
+#     Boost::static_assert
+#     Boost::tuple
+#     Boost::type_traits
+#     Boost::utility
+
+#     Python::Module
+
+#   PRIVATE
+#     Boost::graph
+#     Boost::integer
+#     Boost::property_map
+# )
 
 target_compile_definitions(${_boost_python}
   PUBLIC BOOST_PYTHON_NO_LIB
@@ -113,6 +123,7 @@ if(Python_NumPy_FOUND)
 
 set(_boost_numpy boost_numpy${_pyver})
 
+
 add_library(${_boost_numpy}
   src/numpy/dtype.cpp
   src/numpy/matrix.cpp
@@ -128,12 +139,12 @@ target_include_directories(${_boost_numpy} PUBLIC include)
 
 target_link_libraries(${_boost_numpy}
   PUBLIC
-    Boost::config
-    Boost::core
-    Boost::detail
-    Boost::mpl
+    # Boost::config
+    Boost::headers
+    # Boost::detail
+    # Boost::mpl
     Boost::python
-    Boost::smart_ptr
+    # Boost::smart_ptr
 
     Python::NumPy
 )
@@ -174,3 +185,40 @@ if(BUILD_TESTING AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/test/CMakeLists.txt")
   add_subdirectory(test)
 
 endif()
+
+set(CPACK_PACKAGE_NAME ${PROJECT_NAME}
+    CACHE STRING "The resulting package name"
+)
+# which is useful in case of packing only selected components instead of the whole thing
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Simple C++ application"
+    CACHE STRING "Package description for the package metadata"
+)
+set(CPACK_PACKAGE_VENDOR "Some Company")
+
+set(CPACK_VERBATIM_VARIABLES YES)
+
+set(CPACK_PACKAGE_INSTALL_DIRECTORY ${CPACK_PACKAGE_NAME})
+
+set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+
+set(CPACK_PACKAGE_CONTACT "YOUR@E-MAIL.net")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "YOUR NAME")
+
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE_1_0.txt")
+set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+
+# package name for deb. If set, then instead of some-application-0.9.2-Linux.deb
+# you'll get some-application_0.9.2_amd64.deb (note the underscores too)
+set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
+# that is if you want every group to have its own package,
+# although the same will happen if this is not set (so it defaults to ONE_PER_GROUP)
+# and CPACK_DEB_COMPONENT_INSTALL is set to YES
+set(CPACK_COMPONENTS_GROUPING ALL_COMPONENTS_IN_ONE)#ONE_PER_GROUP)
+# without this you won't be able to pack only specified component
+set(CPACK_DEB_COMPONENT_INSTALL YES)
+
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-dev, python3-dev, libpython3-dev, python3-numpy-dev")
+
+include(CPack)
